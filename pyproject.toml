@@ -1,0 +1,36 @@
+[project]
+name = "Abschlussprojekt"
+version = "0.1.0"
+description = "Default template for PDM package"
+readme = "README.md"
+requires-python = "==3.12.*"
+dependencies = [
+    "ipykernel>=7.0",
+    "matplotlib>=3.11.0rc1",
+    "numpy>=2.4.4",
+    "opencv-python>=4.13.0.92",
+    "pypylon>=26.4.1",
+    "open3d>=0.19.0",
+]
+authors = [
+    {name = "Hannes Unterhuber", email = "uh5864@mci4me.at"},
+]
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+mesh = [
+    "open3d>=0.19",
+]
+widgets = [
+    "ipywidgets>=8.0",
+]
+notebook = [
+    "jupyterlab>=4.0",
+]
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.scripts]
+calibration-report = "python tools/calibration_report.py"
+kernel-install = "python -m ipykernel install --user --name stereo-reconstruction --display-name \"Stereo Reconstruction (PDM)\""
