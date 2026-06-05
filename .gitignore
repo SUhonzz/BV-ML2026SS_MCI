@@ -11,15 +11,6 @@ __pycache__/
 .agents/
 .codex/
 
-# Local scratch captures from the single-camera assignment notebook.
-captures/
-
-# Regenerated reconstruction outputs. Existing tracked files are unaffected.
-pointclouds/
-*.ply
-*.stl
-*.log
-
 # Raw calibration captures are bulky and can be regenerated.
 calib/mono_calib_left/
 calib/mono_calib_right/
