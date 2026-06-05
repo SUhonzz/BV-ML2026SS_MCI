@@ -19,3 +19,7 @@ calib/stereo_calib_images/
 # Generated debug images.
 _debug_*.jpg
 _debug_*.png
+
+# Generated ML detections and downloaded YOLO weights.
+detections/
+yolo*.pt
