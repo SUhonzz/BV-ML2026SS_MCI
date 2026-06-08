@@ -1,0 +1,46 @@
+\chapter{Einleitung}
+
+Die dreidimensionale Erfassung von Szenen ist ein wichtiges Werkzeug in der industriellen
+Bildverarbeitung, Robotik und messtechnischen Analyse. Ein Stereo-Kamerasystem stellt eine
+zugängliche Methode dar, um aus zwei Bildern Tiefeninformation abzuleiten. Voraussetzung
+dafür ist eine geometrische Kalibrierung der Kameras und eine Verarbeitung, bei der
+korrespondierende Bildpunkte zuverlässig gefunden werden können.
+
+Im Projekt wurde ein Workflow für ein Basler-Stereo-Kamerasystem entwickelt. Er umfasst die
+Kalibrierung der Einzelkameras, die Bestimmung der relativen Kameralage, die Rektifizierung,
+die Disparitätsschätzung und die Erzeugung einer farbigen Punktwolke. Ergänzend wurde eine
+Objekterkennung mit einem YOLO-Modell integriert, die auf den unveränderten Rohbildern der
+linken und rechten Kamera arbeitet.
+
+\section{Problemstellung}
+
+Die zentrale Problemstellung bestand darin, aus zwei Kamerabildern eine verwertbare
+Punktwolke zu erzeugen. Dafür müssen die inneren Parameter der Kameras sowie deren relative
+Lage bekannt sein. Anschließend wird das Bildpaar rektifiziert, sodass korrespondierende
+Punkte entlang horizontaler Bildlinien gesucht werden können. Aus der resultierenden
+Disparitätskarte wird über die Reprojektionsmatrix eine Punktwolke berechnet.
+
+Fehlerquellen entstehen durch Kalibrierung, schwach texturierte Oberflächen, Beleuchtung oder
+ungeeignete Disparitätsparameter. Zusätzlich können einzelne Bereiche der Disparitätskarte
+nicht zur beobachteten Szene gehören, etwa isolierte Punktgruppen oder Linienartefakte am
+Bildrand. Deshalb wurde eine nachgelagerte Datensanitation ergänzt.
+
+\section{Zielsetzung}
+
+Ziel des Projekts war ein nachvollziehbarer Notebook-Workflow, der mit angeschlossenen
+Basler-Kameras und mit gespeicherten Bildpaaren ausgeführt werden kann. Im Ergebnis sollten
+folgende Funktionen verfügbar sein:
+
+\begin{itemize}
+    \item Kalibrierung eines Stereo-Kamerasystems mit ChArUco-Board,
+    \item Speicherung und Wiederverwendung der Kalibrierparameter,
+    \item Aufnahme oder Laden eines Stereo-Szenenpaares,
+    \item Rektifizierung und Disparitätsschätzung,
+    \item Export einer farbigen Punktwolke im PLY-Format,
+    \item optionale Sanitation der Disparitäts- und Punktwolkendaten,
+    \item optionale Objekterkennung auf den Rohbildern der Kameras.
+\end{itemize}
+
+Der Bericht beschreibt Grundlagen, Vorgehensweise und aktuellen Implementierungsstand. Eine
+quantitative Bewertung der Punktwolkenqualität oder der Objekterkennung ist noch nicht
+Bestandteil dieses Zwischenstandes.

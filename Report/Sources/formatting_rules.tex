@@ -1,0 +1,316 @@
+\section{Introduction}
+DC motors are fundamental components in control engineering, valued for their simplicity, 
+reliability, and adaptability across a wide range of applications. They are commonly used in 
+systems where precise control of speed and torque is essential, making them ideal for diverse 
+industries and applications.
+
+In everyday applications, DC motors are integral to automotive systems, including electric 
+power steering and drive mechanisms for various car components. In the medical field, they 
+drive devices that require smooth and reliable operation, such as patient beds and ventilators. 
+Industrial automation heavily relies on DC motors to enable precise movement in robotic arms, 
+conveyor systems, and automated assembly lines. In the entertainment industry, DC motors power 
+animatronics and stage effects, enhancing performance and visual impact. Home appliances such as 
+fans, vacuum cleaners, and washing machines also use DC motors for efficient energy conversion. 
+Finally, in aerospace, DC motors contribute to systems that require dependable operation under 
+extreme conditions, from instrumentation to control surfaces in aircraft.
+
+This lab explores the fundamental principles governing DC motor behavior and their practical 
+applications, highlighting the role of DC drives in enabling controlled motion and efficient 
+energy use across different fields.
+
+\textbf{Learning Goals}\\
+This lab aimed to deepen our understanding of DC motor control, specifically by exploring methods to 
+measure, model, and regulate motor behavior in a controlled manner. The primary goals were to develop 
+skills in approximating transfer functions from measured responses, to model and simulate motor dynamics 
+within MATLAB’s Simulink environment, and to design an effective PID controller for the system. 
+By iteratively testing and refining PID values, we sought to achieve a stable, responsive control 
+setup that could be applied to a real motor system. Additionally, this lab emphasized the practical 
+application of control theories, such as root locus analysis, and allowed us to experience firsthand 
+how tuning and testing control parameters impact system performance.\\
+\\
+\textbf{Motivation}\\
+This exercise was motivated by the practical need for control engineers to design efficient and responsive 
+systems across various industries, where accurate motor control is essential. Gaining familiarity with modeling 
+and controller design enhances our capabilities in fields such as robotics, automotive systems, and industrial 
+automation, where motor control plays a critical role.
+\newpage
+\section{Procedure and Method}
+
+The lab was structured to progress through a series of steps that systematically built our knowledge and 
+skills in DC motor control. 
+
+Before the hands-on portion of the laboratory, several essential preparatory tasks were completed. 
+esearch was conducted on real-life applications of DC drives across various industries, including 
+automotive, medical, industrial automation, entertainment, home appliances, and aerospace. 
+This research established context by illustrating the broader relevance of DC motor control 
+and how similar methodologies could be applied across diverse fields.
+
+The derivation of the transfer functions for a DC motor followed, focusing on responses related to both 
+angular velocity and rotational speed.
+
+This process utilized the \grqq white-box modeling\grqq approach. However, applying this approach requires 
+knowledge of the motor's parameters, which were unavailable for the laboratory setup. Instead, MATLAB was 
+used to perform a system-identification task by fitting a PT2 system function to a measured step response, 
+with results detailed in subsequent sections.
+
+With the motor’s transfer function established, the system was implemented in Simulink to simulate its 
+performance. This simulation enabled analysis of the system’s response and facilitated the design and 
+inclusion of a PID controller. Root locus analysis in MATLAB was applied to examine the movement of poles 
+under varying gain conditions, identifying the critical value for stability. Based on this, the Ziegler-Nichols 
+method was employed to calculate initial values for the PID controller, which were then iteratively refined to 
+optimize the motor’s response.
+
+The refined controller was subsequently tested on the physical DC motor. This practical application 
+highlighted discrepancies between simulated and real-world responses, emphasizing the importance of 
+tuning and parameter adjustments to achieve alignment. This approach led to the development of a reliable 
+control setup that provided stable, responsive performance.
+
+The methodology reinforced foundational knowledge in DC motor modeling and control design while also 
+developing practical skills in root locus analysis, gain tuning, and the application of the Ziegler-Nichols method.
+
+
+
+\newpage
+\section{Results}
+
+\subsection{Preparatory work}
+
+The solution to the preparatory work begins with the derivation of the transfer function of a DC motor, 
+utilizing Kirchhoff's first law and the equations of motion. The resulting expression for the angular 
+velocity is shown in Equation (\ref{eq_angular_v_tf}), where $U_{in}$ represents the applied voltage at the 
+terminals, $\omega$ denotes the angular velocity, $J_{mot}$ is the inertia of the rotor, $b_{mot}$ is the 
+damping coefficient of the rotor, $L_{mot}$ is the inductance of the coil, $R$ is the resistance of the 
+wires, $k_e$ is the back electromotive force constant, and $k_t$ is the torque constant.
+
+\begin{equation}
+    \mathcal{G}_{\omega}(s)=\frac{\omega (s)}{U_{in}(s)} = \frac{k_t}{(J_{mot}*s+b_{mot})*(L_{mot}*s+R_{mot})+k_e*k_t}
+    \label{eq_angular_v_tf}
+\end{equation}
+
+By multiplying equation (\ref{eq_angular_v_tf}) with an integrator, it is possible to find the corresponding 
+transfer function for the angular displacement $\Theta$, which is done in equation (\ref{eq_angular_disp_tf}).
+
+\begin{equation}
+    \mathcal{G}_{\Theta}(s) = \frac{\Theta (s)}{U_{in}(s)} = \frac{k_t}{s*((J_{mot}*s+b_{mot})*(L_{mot}*s+R_{mot})+k_e*k_t)}
+    \label{eq_angular_disp_tf}
+\end{equation}
+
+The researched applications of DC motors in real-life scenarios highlight their versatility and significance 
+across various industries. In the automotive sector, DC motors are utilized in electric power steering systems, 
+propulsion mechanisms for electric vehicles, and other precision-driven components. In the medical field, these 
+motors drive devices such as ventilators, patient beds, and advanced surgical equipment. Notably, the Da Vinci 
+surgical robot, known for its precision in minimally invasive surgeries, employs the same type of DC motors used 
+in the laboratory task, underscoring the real-world relevance of the experimental setup.
+
+DC motors are also extensively applied in industrial automation, powering robotic arms, conveyor systems, and 
+CNC machines. In the entertainment industry, they enable smooth motion for animatronics and stage effects, while 
+in household appliances, they contribute to efficient energy conversion in devices like vacuum cleaners and fans. 
+The aerospace sector leverages DC motors for lightweight and reliable actuators in aircraft systems and 
+instrumentation under extreme conditions.
+
+Additionally, measurement data was provided, including the step response of a DC motor, to facilitate system 
+identification. The laboratory setup consisted of a preconfigured system comprising a DC motor and an encoder 
+device for measuring angular position. This configuration enabled a detailed analysis of the motor’s behavior 
+and performance in controlled conditions, bridging the theoretical insights with practical implementation.
+
+\subsection{Identification of the system}
+
+The provided Simulink model was executed to measure the output velocity of the DC motor in response to a step 
+input of 12\,\si{\volt} over a duration of 1.5 seconds. This process generated a table of measured data, which 
+was subsequently plotted and visualized using MATLAB to facilitate further analysis. From the collected data, a 
+transfer function was derived by fitting a PT2 system to the observed step response. The resulting transfer 
+function is presented in Equation (\ref{eq_fitted_tf_omega}).
+
+\begin{equation}
+    \mathcal{G}_{\omega} = \dfrac{275.9}{s^2+34.06*s+394.6}
+    \label{eq_fitted_tf_omega}
+\end{equation}
+
+The fitted step response of the system regarding the angular velocity $\omega$ can be viewed in 
+figure \ref{fig:fitted curve}, along with the measurements.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Images/sys_resp_omega.pdf}
+    \caption{step response of fitted curve over measured data (angular velocity)}
+    \label{fig:fitted curve}
+\end{figure}
+
+By multiplying $\mathcal{G_{\omega}}$ with an integrator, the transfer function for the angular displacement 
+comes out as $\mathcal{G}_{\Theta}$, which can be seen in equation (\ref{eq_fitted_tf_theta}).
+
+\begin{equation}
+    \mathcal{G}_{\Theta} = \dfrac{275.9}{s^2+34.06*s+394.6} * \dfrac{1}{s} = \dfrac{275.9}{s^3+34.06*s^2+394.6*s}
+    \label{eq_fitted_tf_theta}
+\end{equation}
+
+
+\newpage
+\subsection{Controller design}
+
+Using root-locus analysis in MATLAB, it was possible to determine the critical gain $K_{crit}$, which could 
+then be used as a proportional controller in a feedback loop with $\mathcal{G}_{\Theta}$ to find the period 
+time of the oscillating system $T_{osc}$. This is visualised in figure \ref{fig:sys_theta_oscillating}.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Images/sys_resp_theta_osc.pdf}
+    \caption{Step response of $\mathcal{G}_{\Theta}$ with proportional controller using critical gain $K_{crit}$, 
+    visualising $T_{osc}$}
+    \label{fig:sys_theta_oscillating}
+\end{figure}
+
+
+Knowing $K_{crit}$ and $T_{osc}$, it was possible to use the Ziegler-Nichols method to calculate the 
+values $K_p$, $K_i$ and $K_d$ as a starting point for a PID-controller using table \ref{tab:ziegler_nichols_2}.
+
+\newline
+\begin{table}[H]
+\centering
+\caption{Ziegler-Nichols table for determining starting values for P-, PI- or PID-controllers}
+\label{tab:ziegler_nichols_2}
+\begin{tabular}{|l|lll|}
+\hline
+Controller & \multicolumn{3}{l|}{Parameters}                                                                                    \\ \hline
+P          & \multicolumn{1}{l|}{$K_p=0.5*K_{crit}$}  & \multicolumn{1}{l|}{}                             &                     \\ \hline
+PI         & \multicolumn{1}{l|}{$K_p=0.45*K_{crit}$} & \multicolumn{1}{l|}{$T_i=0.83*T_{osc}$} &                     \\ \hline
+PID        & \multicolumn{1}{l|}{$K_p=0.6*K_{crit}$}  & \multicolumn{1}{l|}{$T_i=0.5*T_{osc}$}            & $T_d=0.125*T_{osc}$ \\ \hline
+\end{tabular}
+\end{table}
+
+
+Substituting the values of our system in equations (\ref{eq_ziegler_nichols}), being $K_{crit} = 48.7$ and $T_{osc} = 0.316$, we get:
+\begin{subequations}
+    \begin{equation}
+        K_p = 0.6*K_{crit} = 0.6 * 48.7 = 29.22
+    \end{equation}
+    \begin{equation}
+        K_i = \dfrac{K_p}{T_i} = \dfrac{K_p}{0.5*T_{osc}} = \dfrac{29.22}{0.5 * 0.316} = 184.77
+    \end{equation}
+    \begin{equation}
+        K_d = K_p * T_d = K_p*0.125*T_{osc} = 29.22*0.125 * 0.316 = 1.155
+    \end{equation}
+    \label{eq_ziegler_nichols}
+\end{subequations}
+
+Inserting these values into a PID controller and testing our controller on our identified transfer 
+function $\mathcal{G}_{\Theta}$ in a feedback loop using Simulink, we measured the step response of our 
+new system, which can be seen in figure \ref{fig:ZNCurve}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Images/sys_resp_first_pid.pdf}
+    \caption{Simulated step response of the system with PID controller using Ziegler-Nichols parameters to a 
+    step input of 30\si{\degree}}
+    \label{fig:ZNCurve}
+\end{figure}
+While far from perfect, these values for the controller were a good starting point for further tuning. 
+We were now ready to apply them to the real system.
+
+\newpage
+
+\subsection{Controller implementation and evaluation}
+During the laboratory tasks, issues arose with the PID parameters, preventing the direct application of values 
+determined using the Ziegler-Nichols method to the real system. Instead, the PID-Tuner applet in MATLAB was 
+utilized to generate starting values for the controller parameters. The identified error was traced to the 
+calculation of the $K_d$ value. However, due to these challenges, no measurements on the real system are available 
+for the parameters derived from the Ziegler-Nichols method.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Images/30deg_real.pdf}
+    \caption{Response of real system when exposed to a step input of \ang{30} for different PID-parameters}
+    \label{fig:real_sys_30_deg}
+\end{figure}
+
+As shown in Figure \ref{fig:real_sys_30_deg}, altering the parameters of the controller has a significant 
+impact on the system's response. To determine suitable values for the PID parameters, an iterative approach 
+was employed.
+
+Initially, the PID Tuner Toolbox was utilized to obtain approximate values for the proportional ($K_p$), 
+integral ($K_i$), and derivative ($K_d$) gains. These values served as a starting point for further refinement. 
+The process began with adjustments to $K_p$ and $K_i$, while $K_d$ was temporarily fixed. By iteratively 
+varying $K_p$ and $K_i$, an improved response was achieved.
+
+Subsequently, $K_d$ was introduced into the tuning process, allowing further refinement of the system's dynamic 
+behavior. This iterative procedure ensured that the controller parameters were optimized to achieve the desired 
+performance, balancing stability and responsiveness. For interest's sake, we also tried what would happen to the 
+system, if inappropriately high values for the gains were chosen, which are also visualised in the lower sub-plots 
+of figure \ref{fig:real_sys_30_deg}. The system begins to oscillate when being controlled using these values.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Images/30sine_real.pdf}
+    \caption{Response of real system when exposed to a sine wave input with an amplitude of \ang{30} for different 
+    PID-parameters}
+    \label{fig:real_sys_30_sine}
+\end{figure}
+
+The system's response was further evaluated using a sinusoidal input instead of a simple step input, allowing for 
+the observation of its behavior under various PID parameter configurations. The results of these experiments are 
+presented in Figure \ref{fig:real_sys_30_sine}. Similar to the step input scenario, an excessive increase in the 
+proportional gain ($K_p$) resulted in significant oscillations in the system's output. This underscores the 
+importance of precise tuning of $K_p$ to achieve a balance between stability and responsiveness.
+
+\newpage
+\section{Discussion and Interpretation}
+
+The results of this laboratory exercise offer valuable insights into the design, simulation, and practical 
+implementation of DC motor control systems. Through methodical analysis and testing, we were able to explore 
+the motor’s dynamics, design a control strategy, and implement it effectively.
+\subsection{Transfer Function and System Behavior}
+
+The derivation of the transfer functions for angular displacement and velocity was a foundational step in 
+understanding the motor's behavior. By approximating the motor's response through curve fitting, we achieved a 
+mathematical representation that closely mirrored the real system. This demonstrates the utility of such 
+approximations in simplifying complex systems without sacrificing critical accuracy. The transfer function 
+provided a basis for subsequent simulations and analyses, allowing us to predict system behavior and design a 
+controller tailored to its characteristics.
+
+\subsection{Root-Locus Analysis and Stability}
+
+The root-locus analysis proved instrumental in evaluating the system’s stability and the effects of varying 
+controller gain. By mapping the system poles and their movement with changes in gain, we identified the critical 
+gain—an essential parameter that marks the threshold of stability. This visualization is crucial in control 
+design, as it helps ensure that the system operates within a safe and effective range. The clarity provided by 
+the root-locus approach also underscores its importance as a diagnostic tool in control engineering.
+
+\subsection{The Role of Ziegler-Nichols in PID Design}
+
+The Ziegler-Nichols method plays a pivotal role in determining the initial values for the proportional ($K_p$), 
+integral ($K_i$), and derivative ($K_d$) gains of the PID controller. This empirical tuning method is particularly 
+valuable because it provides a systematic approach to achieve a responsive and stable system. By starting with the 
+critical gain and oscillation period, the Ziegler-Nichols rules allows to derive parameters that will result in a 
+controller capable of balancing responsiveness and stability effectively. Due to aforementioned calculative errors,
+this step was replaced by utilization of the PID-Tuner Toolbox within MATLAB to allow taking further steps through 
+the lab. This Toolbox utilizes the Ziegler-Nichols approach, as well as it employs other PID-Tuning algorithms 
+that are not tought in this lab. Finally further iterative refinement was necessary to tailor the controller to 
+our specific setup, the method gave a strong starting point, reducing the time and effort required for tuning.
+
+The refinement process, carried out in Simulink, allowed us to fine-tune the controller to achieve desired 
+performance characteristics. Simulations revealed the impact of each PID component: the proportional term 
+improving response speed, the integral term reducing steady-state error, and the derivative term dampening 
+oscillations. These insights are critical for understanding how control parameters influence system behavior.
+
+\subsection{Simulated and Real-World Performance}
+
+The comparison between simulated results and the real-world motor system highlighted both the strengths and 
+challenges of practical control design. The PID controller performed well in simulation, demonstrating smooth 
+and stable responses. However, minor discrepancies arose during real-world testing due to factors such as 
+mechanical friction, electrical noise, and sensor inaccuracies, which were not accounted for in the model. 
+This underscores the importance of real-world testing as a complementary step to simulation, bridging the gap 
+between theoretical predictions and practical performance.
+
+\subsection{Practical Implications}
+
+The insights gained through this lab have direct relevance to a wide array of applications where precise motor 
+control is essential. For example, in industrial automation, the ability to design robust and responsive 
+controllers ensures the smooth operation of robotic arms and conveyor systems. Similarly, in automotive systems, 
+fine-tuned motor control is critical for electric power steering and other precision-driven mechanisms. 
+The exploration of Ziegler-Nichols tuning and root-locus analysis equips engineers with powerful tools to design 
+and optimize such systems efficiently.
+
+\subsection{Source code}
+For a short description on what each of the files in the source code does, please consider having a look at 
+README.md.
+

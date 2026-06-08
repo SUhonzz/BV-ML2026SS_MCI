@@ -12,7 +12,7 @@ The project was created with the support of AI, all code and functionality have 
   Calibration notebook for mono calibration, stereo calibration, rectification checks, and scene-placement checks.
 
 - `scene_pointcloud_from_stereo.ipynb`  
-  Reconstruction notebook. It captures or loads a stereo scene pair, rectifies it, computes disparity, and exports a colored point cloud.
+  Reconstruction notebook. It captures or loads a stereo scene pair, optionally runs YOLO object detection on the raw camera images, rectifies the pair, computes disparity, and exports a colored point cloud.
 
 - `calib/stereo_params_mono_first.pkl`  
   Saved stereo calibration parameters used by the reconstruction notebook.
@@ -83,12 +83,13 @@ Use the notebook in this order:
 
 1. Load `calib/stereo_params_mono_first.pkl`.
 2. Capture a new stereo scene pair, or reuse the newest pair in `captures/`.
-3. Optionally apply histogram equalization.
-4. Rectify the stereo pair.
-5. Compute disparity with StereoSGBM.
-6. Inspect the valid disparity mask.
-7. Reproject valid disparity pixels to 3D with the saved `Q` matrix.
-8. Export a colored `.ply` point cloud to `pointclouds/`.
+3. Optionally run YOLO object detection on the raw left/right camera images.
+4. Optionally apply histogram equalization.
+5. Rectify the stereo pair.
+6. Compute disparity with StereoSGBM.
+7. Inspect the valid disparity mask.
+8. Reproject valid disparity pixels to 3D with the saved `Q` matrix.
+9. Export a colored `.ply` point cloud to `pointclouds/`.
 
 If the disparity output is mostly at the maximum value, increase `SGBM_NUM_DISPARITIES` or move the object farther away. A saturated disparity map cannot produce a reliable point cloud.
 
@@ -98,6 +99,7 @@ These folders are intentionally ignored:
 
 - `captures/`
 - `pointclouds/`
+- `detections/`
 - `calib/mono_calib_left/`
 - `calib/mono_calib_right/`
 - `calib/stereo_calib_images/`

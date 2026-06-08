@@ -28,13 +28,10 @@ widgets = [
 notebook = [
     "jupyterlab>=4.0",
 ]
-ml = [
-    "ultralytics>=8.0",
-]
 
 [tool.pdm]
 distribution = false
 
 [tool.pdm.scripts]
-calibration-report = "python tools/calibration_report.py"
+calibration-report = "python calib/tools/calibration_report.py"
 kernel-install = "python -m ipykernel install --user --name stereo-reconstruction --display-name \"Stereo Reconstruction (PDM)\""

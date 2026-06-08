@@ -1,0 +1,26 @@
+\chapter{Fazit}
+
+\section{Zusammenfassung}
+
+Im Projekt wurde ein durchgängiger Workflow für ein Stereo-Kamerasystem erstellt. Er beginnt
+bei der ChArUco-basierten Kalibrierung und führt über Rektifizierung und StereoSGBM zu einer
+Disparitätskarte. Aus dieser Disparität wird mithilfe der Reprojektionsmatrix eine farbige
+Punktwolke erzeugt und als PLY-Datei exportiert.
+
+Zusätzlich wurden praxisnahe Schritte ergänzt. Die Datensanitation entfernt unplausible
+Disparitätswerte, Bildrandartefakte und isolierte Punktgruppen. Getrennte Exporte und
+Open3D-Visualisierungen machen nachvollziehbar, welcher Schritt welche Punkte entfernt.
+Außerdem wurde eine YOLO-basierte Objekterkennung auf den Rohbildern integriert.
+
+Der aktuelle Stand erfüllt damit das Ziel, einen nachvollziehbaren Arbeitsablauf für
+Stereo-Rekonstruktion und erste semantische Szenenanalyse bereitzustellen.
+
+\section{Grenzen und Ausblick}
+
+Die Qualität der Punktwolke hängt weiterhin von Bildqualität, Szenentextur, Beleuchtung und
+Disparitätsparametern ab. Eine systematische quantitative Bewertung über Referenzobjekte
+wurde bisher nicht durchgeführt. Ebenso ist die YOLO-Erkennung noch nicht geometrisch mit der
+Punktwolke verknüpft.
+
+Sinnvolle nächste Schritte sind eine quantitative Bewertung der Rekonstruktionsgenauigkeit,
+robustere Sanitationsparameter und die Verbindung der 2D-Objekterkennung mit den 3D-Punkten.

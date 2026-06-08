@@ -11,7 +11,12 @@ __pycache__/
 .agents/
 .codex/
 
+# Editor-local settings.
+.vscode/
+
 # Raw calibration captures are bulky and can be regenerated.
+captures/
+pointclouds/
 calib/mono_calib_left/
 calib/mono_calib_right/
 calib/stereo_calib_images/
@@ -23,3 +28,17 @@ _debug_*.png
 # Generated ML detections and downloaded YOLO weights.
 detections/
 yolo*.pt
+
+# LaTeX build byproducts.
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*-blx.bib

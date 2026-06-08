@@ -1,0 +1,63 @@
+\chapter{Theoretische Grundlagen}
+
+\section{Stereo-Sehen und Disparität}
+
+Ein Stereo-Kamerasystem nutzt zwei Bilder derselben Szene aus unterschiedlichen Perspektiven.
+Nahe Objekte verschieben sich zwischen linkem und rechtem Bild stärker als entfernte Objekte.
+Diese Verschiebung wird als Disparität bezeichnet. In einem kalibrierten und rektifizierten
+Stereo-System kann sie zur Abschätzung der Tiefe verwendet werden.
+
+Die Rektifizierung transformiert beide Bilder so, dass korrespondierende Bildpunkte auf
+derselben Bildzeile liegen. Dadurch reduziert sich die Korrespondenzsuche auf horizontale
+Linien. Im Projekt wird die Disparität mit Semi-Global Block Matching bestimmt. Das Verfahren
+vergleicht lokale Bildbereiche und nutzt Glättungsannahmen, um eine dichte Disparitätskarte
+zu berechnen.
+
+\begin{figure}[htbp]
+    \centering
+    \ReportImagePlaceholder{Platzhalter: schematische Darstellung von Stereo-Bildpaar, Disparität und Tiefenrichtung}
+    \caption{Prinzip der Tiefenschätzung über Disparität in einem rektifizierten Stereo-System.}
+    \label{fig:stereo_disparity_principle}
+\end{figure}
+
+\section{Kalibrierung mit ChArUco-Board}
+
+Für die Rekonstruktion werden die intrinsischen Parameter beider Kameras und die extrinsische
+Beziehung zwischen ihnen benötigt. Die intrinsischen Parameter beschreiben unter anderem
+Brennweite, Hauptpunkt und Verzeichnung. Die extrinsischen Parameter beschreiben Rotation und
+Translation zwischen den Kamerakoordinaten.
+
+Im Projekt wurde ein ChArUco-Board verwendet. Es kombiniert Schachbrett-Ecken mit
+ArUco-Markern, wodurch Punkte robust erkannt und eindeutig zugeordnet werden können. Das
+Board besitzt $11 \times 8$ Quadrate, eine Quadratgröße von $10\,\mathrm{mm}$ und eine
+Markergröße von $7\,\mathrm{mm}$. Die Kalibrierdaten verwenden daher Millimeter als
+geometrische Einheit.
+
+\begin{figure}[htbp]
+    \centering
+    \ReportImagePlaceholder{Platzhalter: Foto oder Notebook-Ausgabe des verwendeten ChArUco-Boards}
+    \caption{Verwendetes ChArUco-Board als Grundlage für die Mono- und Stereo-Kalibrierung.}
+    \label{fig:charuco_board}
+\end{figure}
+
+Die Kalibrierung folgt einem Mono-First-Ansatz. Zunächst werden linke und rechte Kamera
+separat kalibriert. Danach wird die Stereo-Beziehung mit festen Mono-Intrinsiken geschätzt.
+Diese Trennung erleichtert die Diagnose fehlerhafter Aufnahmen.
+
+\section{Punktwolkenrekonstruktion}
+
+Nach der Disparitätsschätzung werden gültige Pixel mit der Reprojektionsmatrix $Q$ in
+dreidimensionale Punkte überführt. Die Farbinformation stammt aus dem rektifizierten linken
+Kamerabild. Der Export erfolgt als PLY-Datei, sodass die Punktwolke in externen Programmen
+geöffnet werden kann.
+
+Nicht jede berechnete Disparität ist zuverlässig. Deshalb werden Punkte außerhalb eines
+definierten Tiefenbereichs, Disparitäten außerhalb einstellbarer Grenzwerte und isolierte
+Komponenten entfernt.
+
+\section{Objekterkennung mit YOLO}
+
+Zusätzlich wurde ein Abschnitt zur Objekterkennung ergänzt. YOLO-Modelle bestimmen
+Objektklassen und Begrenzungsrahmen in einem Vorwärtsdurchlauf des neuronalen Netzes. Im
+Projekt wird diese Erkennung auf den Rohbildern der Kameras ausgeführt und bleibt damit
+unabhängig von der Stereo-Rekonstruktion.

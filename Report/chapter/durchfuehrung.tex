@@ -1,0 +1,105 @@
+\chapter{Durchführung}
+
+\section{Projektstruktur und Werkzeuge}
+
+Die Umsetzung erfolgte in Python und ist in zwei Jupyter-Notebooks gegliedert. Ein Notebook
+enthält den Kalibrierablauf, das zweite die Rekonstruktion, Datensanitation und
+Objekterkennung. Die Abhängigkeiten werden mit PDM verwaltet. Wesentliche Bibliotheken sind
+OpenCV, pypylon, Open3D und Ultralytics YOLO.
+
+Generierte Bilddaten, Punktwolken und Detektionsbilder werden nicht als zentraler Bestandteil
+des Quellcodes betrachtet. Dadurch bleibt der Workflow reproduzierbar, ohne jede
+Zwischendatei dauerhaft zu versionieren.
+
+\section{Kalibrierablauf}
+
+Die Kalibrierung wurde mit einem ChArUco-Board durchgeführt. Zunächst wurden getrennte
+Kalibrierbilder für linke und rechte Kamera aufgenommen. Daraus wurden die intrinsischen
+Parameter der Einzelkameras bestimmt. Anschließend wurden Stereo-Bildpaare aufgenommen, ohne
+die relative Lage der Kameras zu verändern. Mit festen Mono-Intrinsiken wurde daraus die
+Stereo-Geometrie bestimmt.
+
+Die Stereo-Parameter enthalten Kameramatrizen, Verzeichnungen, Rektifizierungs- und
+Projektionsmatrizen sowie $Q$. Für den aktuellen Datensatz beträgt die Bildgröße
+$1280\,\mathrm{px} \times 1024\,\mathrm{px}$. Die Stereo-Kalibrierung weist einen RMS-Fehler
+von etwa $1{,}34$ auf. Die Mono-RMS-Werte liegen bei etwa $0{,}23$ und $0{,}24$. Die Norm der
+Translation zwischen den Kameras beträgt etwa $123\,\mathrm{mm}$. Diese Werte dienen als
+Plausibilitätskontrolle, ersetzen jedoch keine vollständige Messunsicherheitsanalyse.
+
+\begin{figure}[htbp]
+    \centering
+    \ReportImagePlaceholder{Platzhalter: erkannte ChArUco-Ecken oder Kalibrierbildpaar aus dem Notebook}
+    \caption{Beispielhafte Kalibrieraufnahme mit erkannten ChArUco-Merkmalen.}
+    \label{fig:calibration_detection_example}
+\end{figure}
+
+\section{Rekonstruktionsablauf}
+
+Im Rekonstruktionsnotebook werden zunächst die Kalibrierparameter geladen. Das Szenenbildpaar
+kann neu mit den Basler-Kameras aufgenommen oder aus gespeicherten Rohbildern geladen werden.
+Optional kann eine Histogrammangleichung den Kontrast für das Stereo-Matching verbessern.
+
+Nach dem Laden werden die Bilder rektifiziert und mit StereoSGBM verarbeitet. Für nahe
+Objekte kann der erforderliche Disparitätsbereich groß werden; deshalb enthält das Notebook
+eine automatische Erweiterung, wenn eine Sättigung am oberen Grenzwert erkannt wird. Gültige
+Disparitätspixel werden mit $Q$ zu 3D-Punkten reprojectiert. Die Farben stammen aus dem
+linken rektifizierten Bild.
+
+Der Export erfolgt im binären PLY-Format. Zur Kontrolle dienen eine Matplotlib-Vorschau und
+eine interaktive Open3D-Ansicht. Für große Punktwolken wird eine reproduzierbare
+Zufallsauswahl verwendet.
+
+\begin{figure}[htbp]
+    \centering
+    \ReportImagePlaceholder{Platzhalter: Disparitätskarte oder rektifiziertes Stereo-Bildpaar aus dem Rekonstruktionsnotebook}
+    \caption{Zwischenergebnis der Rekonstruktion, beispielsweise rektifizierte Bilder oder Disparitätskarte.}
+    \label{fig:reconstruction_intermediate}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \ReportImagePlaceholder{Platzhalter: Open3D-Ansicht der exportierten Punktwolke}
+    \caption{Kontrollansicht der rekonstruierten farbigen Punktwolke.}
+    \label{fig:pointcloud_overview}
+\end{figure}
+
+\section{Datensanitation}
+
+Während der Rekonstruktion können Artefakte entstehen, etwa sehr hohe oder niedrige
+Disparitäten, Randlinien und isolierte Punktgruppen. Dafür wurde eine Datensanitation
+ergänzt.
+
+Der erste Schritt arbeitet auf der Disparitätskarte. Er erlaubt minimale und maximale
+Disparitätswerte sowie einen gültigen Bildbereich. So können vertikale oder horizontale
+Artefaktlinien außerhalb des relevanten Bereichs entfernt werden. Aus dieser geschnittenen
+Disparitätskarte wird eine eigene Punktwolke exportiert.
+
+Der zweite Schritt entfernt kleine getrennte Bereiche über verbundene Komponenten in der
+gültigen Disparitätsmaske. In der aktuellen Einstellung wird der größte zusammenhängende
+Bereich beibehalten; weitere Bereiche müssen eine Mindestgröße überschreiten. Eine
+Open3D-Vergleichsansicht zeigt entfernte Punkte rot eingefärbt.
+
+\begin{figure}[htbp]
+    \centering
+    \ReportImagePlaceholder{Platzhalter: Open3D-Vergleichsansicht mit entfernten Punkten in Rot}
+    \caption{Vergleich zwischen beibehaltenen und durch die Datensanitation entfernten Punkten.}
+    \label{fig:data_sanitation_removed_points}
+\end{figure}
+
+\section{Objekterkennung}
+
+Die Objekterkennung wurde als separater Verarbeitungsschritt ergänzt und wird auf den
+Rohbildern der linken und rechten Kamera ausgeführt. Die Rohbilder entsprechen dem direkten
+Sensorausgang und enthalten keine geometrische Transformation durch die Rektifizierung. Die
+Ausgabe umfasst Klassen, Konfidenzen, Bounding Boxes und annotierte Bilddateien.
+
+Die Objekterkennung ist aktuell ein vorbereitender Schritt. Sie liefert semantische
+Information, ist aber noch nicht mit der Punktwolke fusioniert. Eine Übertragung der Bounding
+Boxes auf 3D-Punkte wäre ein sinnvoller nächster Entwicklungsschritt.
+
+\begin{figure}[htbp]
+    \centering
+    \ReportImagePlaceholder{Platzhalter: YOLO-Ausgabe auf linkem und rechtem Rohbild}
+    \caption{Beispielhafte Objekterkennung auf den unveränderten Rohbildern der Kameras.}
+    \label{fig:yolo_raw_detection}
+\end{figure}
