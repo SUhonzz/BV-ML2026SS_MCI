@@ -2,25 +2,63 @@
 
 \section{Zusammenfassung}
 
-Im Projekt wurde ein durchgängiger Workflow für ein Stereo-Kamerasystem erstellt. Er beginnt
-bei der ChArUco-basierten Kalibrierung und führt über Rektifizierung und StereoSGBM zu einer
-Disparitätskarte. Aus dieser Disparität wird mithilfe der Reprojektionsmatrix eine farbige
-Punktwolke erzeugt und als PLY-Datei exportiert.
+Im Projekt wurde ein vollständiger Workflow für Stereo-Bildverarbeitung und
+Machine-Learning-basierte Objekterkennung umgesetzt. Der Bildverarbeitungsteil umfasst die
+ChArUco-basierte Mono- und Stereo-Kalibrierung, die Speicherung der Kalibrierparameter, die
+Aufnahme und Wiederverwendung von Stereo-Bildpaaren, die Rektifizierung, die Berechnung von
+Disparitätskarten mit StereoSGBM und den Export farbiger Punktwolken. Ergänzend wurden
+Filter zur Entfernung unplausibler Tiefen, Disparitätsartefakte und kleiner getrennter
+Komponenten erstellt.
 
-Zusätzlich wurden praxisnahe Schritte ergänzt. Die Datensanitation entfernt unplausible
-Disparitätswerte, Bildrandartefakte und isolierte Punktgruppen. Getrennte Exporte und
-Open3D-Visualisierungen machen nachvollziehbar, welcher Schritt welche Punkte entfernt.
-Außerdem wurde eine YOLO-basierte Objekterkennung auf den Rohbildern integriert.
+Der Machine-Learning-Teil umfasst einen eigenen YOLO-Datensatz für drei Schreibgeräteklassen
+und ein trainiertes YOLO11m-Modell. Der beste Trainingsstand erreicht eine mAP@50 von 0,985
+und eine mAP@50:95 von 0,845. Die Inferenz wurde in das Rekonstruktionsnotebook integriert
+und erzeugt annotierte linke und rechte Rohbilder.
 
-Der aktuelle Stand erfüllt damit das Ziel, einen nachvollziehbaren Arbeitsablauf für
-Stereo-Rekonstruktion und erste semantische Szenenanalyse bereitzustellen.
+Wichtig ist die klare Rollenverteilung: Die klassische Bildverarbeitung liefert metrische
+3D-Geometrie, das Machine Learning liefert semantische Objektinformation. Beide Teile sind
+getrennt nachvollziehbar und bilden gemeinsam eine solide Basis für semantische
+3D-Szenenanalyse.
 
-\section{Grenzen und Ausblick}
+\section{Grenzen}
 
-Die Qualität der Punktwolke hängt weiterhin von Bildqualität, Szenentextur, Beleuchtung und
-Disparitätsparametern ab. Eine systematische quantitative Bewertung über Referenzobjekte
-wurde bisher nicht durchgeführt. Ebenso ist die YOLO-Erkennung noch nicht geometrisch mit der
-Punktwolke verknüpft.
+Die Punktwolkenqualität hängt stark von der Kalibrierung, der Szene, der Beleuchtung und dem
+Disparitätsbereich ab. Schwach texturierte oder spiegelnde Oberflächen können weiterhin zu
+Fehlmatches führen. Der Stereo-RMS-Wert von ca. $1{,}34\,\mathrm{px}$ ist als
+Plausibilitätswert brauchbar, zeigt aber auch, dass eine genauere Kalibrierkampagne die
+3D-Qualität verbessern könnte.
 
-Sinnvolle nächste Schritte sind eine quantitative Bewertung der Rekonstruktionsgenauigkeit,
-robustere Sanitationsparameter und die Verbindung der 2D-Objekterkennung mit den 3D-Punkten.
+Beim YOLO-Modell ist die Validierungsleistung hoch, der Datensatz ist jedoch klein und aus
+ähnlichen Aufnahmebedingungen entstanden. Deshalb sollte die gute mAP nicht als Garantie für
+beliebige neue Szenen verstanden werden. Besonders andere Hintergründe, Beleuchtungen,
+Verdeckungen und Kamerawinkel sollten für eine robuste Bewertung zusätzlich getestet werden.
+
+\section{Ausblick}
+
+Die nächsten sinnvollen Schritte sind:
+
+\begin{itemize}
+    \item quantitative Bewertung der 3D-Rekonstruktion mit Referenzobjekten,
+    \item zusätzliche Kalibrierbilder mit stärkerer Abdeckung des Bildfeldes,
+    \item systematische Parameterstudie für StereoSGBM,
+    \item Erweiterung des YOLO-Datensatzes um mehr Hintergründe, Abstände und Verdeckungen,
+    \item Auswertung des Testsets zusätzlich zur Validierung,
+    \item Fusion von 2D-Bounding-Boxes mit den rekonstruierten 3D-Punkten,
+    \item Berechnung objektbezogener 3D-Merkmale wie Schwerpunkt, Ausdehnung und Abstand.
+\end{itemize}
+
+\section{Verwendete Quellen}
+
+Als fachliche Grundlage wurden zuerst die bereitgestellten Kursunterlagen verdichtet und auf
+das Projekt bezogen:
+
+\begin{itemize}
+    \item Stefan Reinmüller: \textit{Industrielle Bildaufnahme \& Bildverarbeitung},
+          veröffentlicht am 13.04.2026, \url{https://stefan-reinmueller.github.io/MECH-M-DUAL-2-BEV/}.
+    \item Peter Kandolf: \textit{Machine Learning in Industrial Image Processing},
+          veröffentlicht am 04.04.2026, \url{https://kandolfp.github.io/MECH-M-DUAL-2-MLB/}.
+\end{itemize}
+
+Zusätzlich wurden die Projektdateien, Notebooks, gespeicherten Kalibrierparameter,
+YOLO-Konfigurationen, Trainingsmetriken und erzeugten Artefakte im Workspace als direkte
+Quellen für die Dokumentation verwendet.

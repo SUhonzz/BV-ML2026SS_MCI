@@ -28,6 +28,8 @@ _debug_*.png
 # Generated ML detections and downloaded YOLO weights.
 detections/
 yolo*.pt
+CustomModel/
+runs/
 
 # LaTeX build byproducts.
 *.aux

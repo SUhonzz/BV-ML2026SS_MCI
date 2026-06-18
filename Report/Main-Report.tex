@@ -17,8 +17,16 @@ column-type  = two,                          % (one    | two)
 % are from another discipline, please feel free to change it.
 
 \bibliography{references.bib}  % Here we add our file where we store our references.
+\usepackage{url}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.5em}
+\graphicspath{%
+  {img/}%
+  {../captures/}%
+  {../detections/}%
+  {../CustomModel/runs/runs/stifterkennung_yolo11m/}%
+  {../CustomModel/TrainingData/Stifterkennung.yolov11/}%
+}
 % Keep only the table of contents in the report front matter.
 \renewcommand{\TableOfContents}{\tableofcontents}
 \newcommand{\ReportImagePlaceholder}[1]{%
@@ -36,7 +44,7 @@ column-type  = two,                          % (one    | two)
 \TitleHeader{Bericht}%   
 
 \Title{%
-  Stereo-Kamerakalibrierung und Punktwolkenrekonstruktion
+  Stereo-Rekonstruktion und Stifterkennung
 }% 
 
 \Lecture{Bildverarbeitung und Machine Learning}%    
@@ -47,7 +55,7 @@ column-type  = two,                          % (one    | two)
 
 \StudentName{Hannes Unterhuber, Benedikt Reimeir}%
 
-\StudentID{61901292, Bennis fehlt noch}% 
+\StudentID{61901292, 52216064}% 
 
 \Supervisor{Ing. Stefan Reinmüller, B.Sc., M.Sc.}%
 

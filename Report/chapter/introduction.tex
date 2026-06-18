@@ -1,46 +1,52 @@
 \chapter{Einleitung}
 
-Die dreidimensionale Erfassung von Szenen ist ein wichtiges Werkzeug in der industriellen
-Bildverarbeitung, Robotik und messtechnischen Analyse. Ein Stereo-Kamerasystem stellt eine
-zugängliche Methode dar, um aus zwei Bildern Tiefeninformation abzuleiten. Voraussetzung
-dafür ist eine geometrische Kalibrierung der Kameras und eine Verarbeitung, bei der
-korrespondierende Bildpunkte zuverlässig gefunden werden können.
+Ziel des Projekts war der Aufbau eines durchgängigen Demonstrators für industrielle
+Bildverarbeitung und Machine Learning. Der erste Projektteil behandelt die klassische
+Bildverarbeitung: ein Basler-Stereo-Kamerasystem wird kalibriert, Bildpaare werden
+rektifiziert, daraus wird eine Disparitätskarte berechnet und anschließend eine farbige
+3D-Punktwolke exportiert. Der zweite Projektteil ergänzt diese geometrische Verarbeitung um
+Machine Learning: ein eigenes YOLO-Modell erkennt Schreibgeräte in den Rohbildern der
+Kameras.
 
-Im Projekt wurde ein Workflow für ein Basler-Stereo-Kamerasystem entwickelt. Er umfasst die
-Kalibrierung der Einzelkameras, die Bestimmung der relativen Kameralage, die Rektifizierung,
-die Disparitätsschätzung und die Erzeugung einer farbigen Punktwolke. Ergänzend wurde eine
-Objekterkennung mit einem YOLO-Modell integriert, die auf den unveränderten Rohbildern der
-linken und rechten Kamera arbeitet.
+Die beiden Teile sind bewusst getrennt aufgebaut. Die Bildverarbeitung erzeugt metrische
+3D-Informationen und hängt stark von Kamerageometrie, Beleuchtung, Textur und
+Disparitätsparametern ab. Das Machine-Learning-Modul liefert semantische Information in Form
+von Klassen, Konfidenzen und Bounding Boxes. Zusammen bilden sie die Grundlage für eine
+spätere semantische 3D-Auswertung, bei der erkannte Objekte direkt mit Punkten im Raum
+verknüpft werden könnten.
 
-\section{Problemstellung}
+\section{Aufgabenstellung}
 
-Die zentrale Problemstellung bestand darin, aus zwei Kamerabildern eine verwertbare
-Punktwolke zu erzeugen. Dafür müssen die inneren Parameter der Kameras sowie deren relative
-Lage bekannt sein. Anschließend wird das Bildpaar rektifiziert, sodass korrespondierende
-Punkte entlang horizontaler Bildlinien gesucht werden können. Aus der resultierenden
-Disparitätskarte wird über die Reprojektionsmatrix eine Punktwolke berechnet.
+Aus zwei Kamerabildern soll eine verwertbare Punktwolke entstehen. Dafür werden zunächst die
+intrinsischen Parameter beider Kameras sowie die relative Lage der Kameras zueinander
+bestimmt. Danach werden neue Stereo-Szenen aufgenommen oder aus dem Projektordner geladen,
+rektifiziert und mit einem Stereo-Matching-Verfahren verarbeitet. Die Tiefeninformation
+entsteht aus der Disparität, also der horizontalen Verschiebung korrespondierender Bildpunkte.
 
-Fehlerquellen entstehen durch Kalibrierung, schwach texturierte Oberflächen, Beleuchtung oder
-ungeeignete Disparitätsparameter. Zusätzlich können einzelne Bereiche der Disparitätskarte
-nicht zur beobachteten Szene gehören, etwa isolierte Punktgruppen oder Linienartefakte am
-Bildrand. Deshalb wurde eine nachgelagerte Datensanitation ergänzt.
+Parallel dazu soll ein Detektor für drei Stiftklassen trainiert werden. Die Klassen sind
+\textit{Fineliner}, \textit{Marker} und \textit{Pencil}. Der Detektor arbeitet auf den
+unveränderten Rohbildern und ist damit unabhängig von der Rektifizierung und der
+Punktwolkenberechnung.
 
-\section{Zielsetzung}
+\section{Projektziele}
 
-Ziel des Projekts war ein nachvollziehbarer Notebook-Workflow, der mit angeschlossenen
-Basler-Kameras und mit gespeicherten Bildpaaren ausgeführt werden kann. Im Ergebnis sollten
-folgende Funktionen verfügbar sein:
+Im Projekt wurden folgende Ziele umgesetzt:
 
 \begin{itemize}
-    \item Kalibrierung eines Stereo-Kamerasystems mit ChArUco-Board,
-    \item Speicherung und Wiederverwendung der Kalibrierparameter,
-    \item Aufnahme oder Laden eines Stereo-Szenenpaares,
-    \item Rektifizierung und Disparitätsschätzung,
-    \item Export einer farbigen Punktwolke im PLY-Format,
-    \item optionale Sanitation der Disparitäts- und Punktwolkendaten,
-    \item optionale Objekterkennung auf den Rohbildern der Kameras.
+    \item Mono- und Stereo-Kalibrierung mit einem ChArUco-Board,
+    \item Speicherung wiederverwendbarer Kalibrierparameter,
+    \item Aufnahme und Wiederverwendung von Stereo-Bildpaaren,
+    \item Rektifizierung, Disparitätsschätzung und 3D-Reprojektion,
+    \item Export roher, geschnittener und bereinigter Punktwolken im PLY-Format,
+    \item Integration einer YOLO-Inferenz auf linken und rechten Rohbildern,
+    \item Erstellung und Training eines eigenen YOLO-Datensatzes für Schreibgeräte,
+    \item Dokumentation der erzeugten Artefakte, Grenzen und nächsten Schritte.
 \end{itemize}
 
-Der Bericht beschreibt Grundlagen, Vorgehensweise und aktuellen Implementierungsstand. Eine
-quantitative Bewertung der Punktwolkenqualität oder der Objekterkennung ist noch nicht
-Bestandteil dieses Zwischenstandes.
+\section{Abgrenzung}
+
+Der aktuelle Stand ist ein funktionsfähiger Workflow und keine vollständig validierte
+Messlösung. Die Punktwolkenqualität wurde visuell und über Plausibilitätswerte geprüft; eine
+systematische Messunsicherheitsanalyse mit Referenzkörpern wurde noch nicht durchgeführt.
+Auch die Objekterkennung ist bisher als 2D-Detektor integriert. Eine robuste Fusion von
+Bounding Boxes und 3D-Punkten ist als nächster Entwicklungsschritt vorgesehen.

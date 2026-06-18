@@ -1,63 +1,91 @@
 \chapter{Theoretische Grundlagen}
 
-\section{Stereo-Sehen und Disparität}
+\section{Bildverarbeitung}
 
-Ein Stereo-Kamerasystem nutzt zwei Bilder derselben Szene aus unterschiedlichen Perspektiven.
-Nahe Objekte verschieben sich zwischen linkem und rechtem Bild stärker als entfernte Objekte.
-Diese Verschiebung wird als Disparität bezeichnet. In einem kalibrierten und rektifizierten
-Stereo-System kann sie zur Abschätzung der Tiefe verwendet werden.
+Die Vorlesungsunterlagen zur industriellen Bildaufnahme und Bildverarbeitung behandeln für
+dieses Projekt besonders relevante Themen: Bildaufnahme, Bildqualität,
+geometrische Transformationen, Kamerakalibrierung und 3D-Rekonstruktion. Genau diese
+Bausteine bilden den klassischen Bildverarbeitungsteil des Projekts.
 
-Die Rektifizierung transformiert beide Bilder so, dass korrespondierende Bildpunkte auf
-derselben Bildzeile liegen. Dadurch reduziert sich die Korrespondenzsuche auf horizontale
-Linien. Im Projekt wird die Disparität mit Semi-Global Block Matching bestimmt. Das Verfahren
-vergleicht lokale Bildbereiche und nutzt Glättungsannahmen, um eine dichte Disparitätskarte
-zu berechnen.
+\subsection{Kamera, Kalibrierung und Rektifizierung}
 
-\begin{figure}[htbp]
-    \centering
-    \ReportImagePlaceholder{Platzhalter: schematische Darstellung von Stereo-Bildpaar, Disparität und Tiefenrichtung}
-    \caption{Prinzip der Tiefenschätzung über Disparität in einem rektifizierten Stereo-System.}
-    \label{fig:stereo_disparity_principle}
-\end{figure}
+Eine reale Kamera bildet die Welt nicht ideal pinhole-artig ab. Brennweite, Hauptpunkt und
+Verzeichnung müssen deshalb modelliert werden. Diese Parameter werden als intrinsische
+Parameter bezeichnet. Bei einem Stereo-System kommt zusätzlich die extrinsische Beziehung
+zwischen linker und rechter Kamera hinzu, also Rotation und Translation zwischen den beiden
+Kamerakoordinatensystemen.
 
-\section{Kalibrierung mit ChArUco-Board}
+Im Projekt wird ein ChArUco-Board verwendet. ChArUco kombiniert ArUco-Marker mit
+Schachbrett-Ecken. Dadurch können Kalibrierpunkte auch dann eindeutig erkannt werden, wenn
+nicht das gesamte Board sichtbar ist. Das eingesetzte Board besitzt $11 \times 8$ Quadrate,
+eine Quadratgröße von $10\,\mathrm{mm}$ und eine Markergröße von $7\,\mathrm{mm}$. Da diese
+Geometrie in Millimetern angegeben ist, werden auch die rekonstruierten 3D-Punkte in
+Millimetern interpretiert.
 
-Für die Rekonstruktion werden die intrinsischen Parameter beider Kameras und die extrinsische
-Beziehung zwischen ihnen benötigt. Die intrinsischen Parameter beschreiben unter anderem
-Brennweite, Hauptpunkt und Verzeichnung. Die extrinsischen Parameter beschreiben Rotation und
-Translation zwischen den Kamerakoordinaten.
+Nach der Kalibrierung werden Stereo-Bildpaare rektifiziert. Die Rektifizierung transformiert
+beide Bilder so, dass korrespondierende Bildpunkte auf derselben Bildzeile liegen. Dadurch
+wird aus einer zweidimensionalen Suche nach passenden Bildpunkten eine eindimensionale Suche
+entlang horizontaler Epipolarlinien.
 
-Im Projekt wurde ein ChArUco-Board verwendet. Es kombiniert Schachbrett-Ecken mit
-ArUco-Markern, wodurch Punkte robust erkannt und eindeutig zugeordnet werden können. Das
-Board besitzt $11 \times 8$ Quadrate, eine Quadratgröße von $10\,\mathrm{mm}$ und eine
-Markergröße von $7\,\mathrm{mm}$. Die Kalibrierdaten verwenden daher Millimeter als
-geometrische Einheit.
+\subsection{Disparität und 3D-Reprojektion}
 
-\begin{figure}[htbp]
-    \centering
-    \ReportImagePlaceholder{Platzhalter: Foto oder Notebook-Ausgabe des verwendeten ChArUco-Boards}
-    \caption{Verwendetes ChArUco-Board als Grundlage für die Mono- und Stereo-Kalibrierung.}
-    \label{fig:charuco_board}
-\end{figure}
+Die Disparität beschreibt die horizontale Verschiebung eines Objektpunktes zwischen linkem
+und rechtem Bild. Nahe Objekte erzeugen größere Disparitäten als weit entfernte Objekte. Im
+Projekt wird Semi-Global Block Matching eingesetzt. Das Verfahren vergleicht lokale
+Bildbereiche, berücksichtigt aber zusätzlich Glattheitsannahmen, damit die berechnete
+Disparitätskarte weniger sprunghaft wird.
 
-Die Kalibrierung folgt einem Mono-First-Ansatz. Zunächst werden linke und rechte Kamera
-separat kalibriert. Danach wird die Stereo-Beziehung mit festen Mono-Intrinsiken geschätzt.
-Diese Trennung erleichtert die Diagnose fehlerhafter Aufnahmen.
+Gültige Disparitätswerte werden anschließend mit der von OpenCV erzeugten
+Reprojektionsmatrix $Q$ in 3D-Punkte umgerechnet. Die Farbinformation wird aus dem
+rektifizierten linken Kamerabild übernommen. Ergebnis ist eine farbige Punktwolke, die als
+PLY-Datei gespeichert und mit Open3D, MeshLab oder CloudCompare betrachtet werden kann.
 
-\section{Punktwolkenrekonstruktion}
+\subsection{Bildqualität und Artefakte}
 
-Nach der Disparitätsschätzung werden gültige Pixel mit der Reprojektionsmatrix $Q$ in
-dreidimensionale Punkte überführt. Die Farbinformation stammt aus dem rektifizierten linken
-Kamerabild. Der Export erfolgt als PLY-Datei, sodass die Punktwolke in externen Programmen
-geöffnet werden kann.
+Stereo-Matching ist empfindlich gegenüber schwacher Textur, Überbelichtung,
+Bewegungsunschärfe, spiegelnden Oberflächen und ungeeigneten Disparitätsgrenzen. Deshalb
+enthält der Workflow Kontrastverbesserung durch CLAHE, eine automatische Warnung bei
+Disparitätssättigung und nachgelagerte Filter für Tiefenbereich, Disparitätsbereich und
+zusammenhängende Komponenten.
 
-Nicht jede berechnete Disparität ist zuverlässig. Deshalb werden Punkte außerhalb eines
-definierten Tiefenbereichs, Disparitäten außerhalb einstellbarer Grenzwerte und isolierte
-Komponenten entfernt.
+\section{Machine Learning}
 
-\section{Objekterkennung mit YOLO}
+Die Vorlesungsunterlagen zu Machine Learning in der industriellen Bildverarbeitung behandeln
+unter anderem überwachte Lernverfahren, Datenmanagement, Convolutional Neural Networks,
+Transfer Learning, Datenaufbereitung und typische Herausforderungen. Für dieses Projekt sind
+vor allem CNNs, Transfer Learning, Datenlabeling und Augmentation relevant.
 
-Zusätzlich wurde ein Abschnitt zur Objekterkennung ergänzt. YOLO-Modelle bestimmen
-Objektklassen und Begrenzungsrahmen in einem Vorwärtsdurchlauf des neuronalen Netzes. Im
-Projekt wird diese Erkennung auf den Rohbildern der Kameras ausgeführt und bleibt damit
-unabhängig von der Stereo-Rekonstruktion.
+\subsection{CNNs und Objektdetektion}
+
+Convolutional Neural Networks sind für Bilddaten geeignet, weil Faltungsfilter lokale Muster
+wie Kanten, Ecken, Texturen und Objektteile über das gesamte Bild wiederverwenden. Durch
+Parameter Sharing und lokale Rezeptivfelder können CNNs Bildmerkmale effizient lernen. Bei
+der Objektdetektion wird nicht nur eine Klasse für das gesamte Bild vorhergesagt, sondern es
+werden zusätzlich Bounding Boxes für einzelne Objekte bestimmt.
+
+YOLO-Modelle formulieren Objektdetektion als schnellen Vorwärtsdurchlauf eines neuronalen
+Netzes. Die Ausgabe besteht aus Klasse, Konfidenz und Bounding Box. Im Projekt wird YOLO als
+semantisches Modul eingesetzt: Es erkennt Schreibgeräte in den Rohbildern, während die
+Stereo-Pipeline die geometrische 3D-Information erzeugt.
+
+\subsection{Transfer Learning und Datenaufbereitung}
+
+Das Training moderner Detektionsnetze von Grund auf benötigt große Datenmengen und viel
+Rechenleistung. Deshalb wurde ein vortrainiertes YOLO11m-Modell verwendet und auf den eigenen
+Stiftdatensatz angepasst. Das entspricht dem Transfer-Learning-Gedanken: allgemeine
+Bildmerkmale werden aus einem vortrainierten Modell übernommen, während das Modell auf die
+projektspezifischen Klassen feinangepasst wird.
+
+Für überwachte Detektion ist die Labelqualität entscheidend. Die Projektbilder wurden in
+Bounding-Box-Form annotiert und in Trainings-, Validierungs- und Testdaten aufgeteilt.
+Augmentationen wie Skalierung, Translation, horizontales Spiegeln, Farbanpassungen, Mosaic
+und Random Erasing erhöhen die Robustheit gegenüber realen Aufnahmevariationen.
+
+\section{Trennung der Projektteile}
+
+Die Bildverarbeitung arbeitet deterministisch mit expliziten Kameramodellen und
+geometrischen Annahmen. Ihre Ergebnisse sind metrisch interpretierbar, aber empfindlich
+gegen Kalibrier- und Matchingfehler. Das Machine-Learning-Modul arbeitet datengetrieben. Es
+liefert semantische Entscheidungen, deren Qualität von Datensatz, Labeling und
+Generalisierung abhängt. Im Projekt sind beide Module getrennt lauffähig und werden erst auf
+Ebene der Anwendung zusammengeführt.

@@ -1,105 +1,228 @@
-\chapter{Durchführung}
+\chapter{Durchführung und Umsetzung}
 
-\section{Projektstruktur und Werkzeuge}
+\section{Projektstruktur}
 
-Die Umsetzung erfolgte in Python und ist in zwei Jupyter-Notebooks gegliedert. Ein Notebook
-enthält den Kalibrierablauf, das zweite die Rekonstruktion, Datensanitation und
-Objekterkennung. Die Abhängigkeiten werden mit PDM verwaltet. Wesentliche Bibliotheken sind
-OpenCV, pypylon, Open3D und Ultralytics YOLO.
+Die Umsetzung ist als Python-Projekt mit PDM organisiert. Die wichtigsten Dateien und Ordner
+sind:
 
-Generierte Bilddaten, Punktwolken und Detektionsbilder werden nicht als zentraler Bestandteil
-des Quellcodes betrachtet. Dadurch bleibt der Workflow reproduzierbar, ohne jede
-Zwischendatei dauerhaft zu versionieren.
+\begin{itemize}
+    \item \texttt{calib/mono\_then\_stereo\_calibration.ipynb}: Mono- und Stereo-Kalibrierung,
+    \item \texttt{scene\_pointcloud\_from\_stereo.ipynb}: Aufnahme, Detektion, Rektifizierung,
+          Disparität, Punktwolkenexport und Sanitation,
+    \item \texttt{calib/mono\_camera\_params.pkl}: gespeicherte Mono-Intrinsiken,
+    \item \texttt{calib/stereo\_params\_mono\_first.pkl}: gespeicherte Stereo-Parameter,
+    \item \texttt{captures/}: gespeicherte linke und rechte Stereo-Rohbilder,
+    \item \texttt{detections/}: YOLO-Ausgaben auf Rohbildern,
+    \item \texttt{pointclouds/}: exportierte PLY-Punktwolken,
+    \item \texttt{CustomModel/TrainingData/Stifterkennung.yolov11/}: YOLO-Datensatz,
+    \item \texttt{best.pt}: Trainingsergebnisse.
+\end{itemize}
 
-\section{Kalibrierablauf}
+Die wesentlichen Bibliotheken sind OpenCV, pypylon, Open3D, NumPy, Matplotlib und Ultralytics
+YOLO. Der Quellcode ist notebookbasiert, damit Kalibrierung, Sichtprüfung und Export
+schrittweise nachvollzogen werden können.
 
-Die Kalibrierung wurde mit einem ChArUco-Board durchgeführt. Zunächst wurden getrennte
-Kalibrierbilder für linke und rechte Kamera aufgenommen. Daraus wurden die intrinsischen
-Parameter der Einzelkameras bestimmt. Anschließend wurden Stereo-Bildpaare aufgenommen, ohne
-die relative Lage der Kameras zu verändern. Mit festen Mono-Intrinsiken wurde daraus die
-Stereo-Geometrie bestimmt.
 
-Die Stereo-Parameter enthalten Kameramatrizen, Verzeichnungen, Rektifizierungs- und
-Projektionsmatrizen sowie $Q$. Für den aktuellen Datensatz beträgt die Bildgröße
-$1280\,\mathrm{px} \times 1024\,\mathrm{px}$. Die Stereo-Kalibrierung weist einen RMS-Fehler
-von etwa $1{,}34$ auf. Die Mono-RMS-Werte liegen bei etwa $0{,}23$ und $0{,}24$. Die Norm der
-Translation zwischen den Kameras beträgt etwa $123\,\mathrm{mm}$. Diese Werte dienen als
-Plausibilitätskontrolle, ersetzen jedoch keine vollständige Messunsicherheitsanalyse.
+\section{Teil A: Bildverarbeitung}
+
+\subsection{Kalibrierworkflow}
+
+Die Kalibrierung folgt einem Mono-First-Ansatz. Zuerst wurden linke und rechte Kamera separat
+kalibriert. Danach wurde die Stereo-Beziehung mit fixierten Mono-Intrinsiken bestimmt. Diese
+Trennung erleichtert die Fehlersuche, weil schlechte Einzelkameraparameter nicht erst in der
+Stereo-Kalibrierung sichtbar werden.
+
+Die Konfiguration des Kalibriernotebooks umfasst ein ChArUco-Board mit $11 \times 8$
+Quadraten, $10\,\mathrm{mm}$ Quadratgröße, $7\,\mathrm{mm}$ Markergröße,
+\texttt{DICT\_4X4\_50} und aktivierter Legacy-ChArUco-Anordnung. Für gültige Bilder werden
+mindestens zwölf interpolierte ChArUco-Ecken gefordert. Kameraordnung, Belichtung, Gain,
+Fokus, Auflösung und Boardgeometrie müssen während einer Kalibriersitzung unverändert
+bleiben.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Wesentliche Kalibrierparameter des aktuellen Stands.}
+    \label{tab:calibration_values}
+    \begin{tabular}{ll}
+        \hline
+        Parameter & Wert \\
+        \hline
+        Bildgröße & $1280 \times 1024\,\mathrm{px}$ \\
+        Mono-RMS links/rechts & ca. $0{,}23\,\mathrm{px}$ / $0{,}24\,\mathrm{px}$ \\
+        Stereo-RMS & ca. $1{,}34\,\mathrm{px}$ \\
+        Baseline & ca. $123\,\mathrm{mm}$ \\
+        Kalibriereinheit & Millimeter \\
+        Ausgabedatei & \texttt{calib/stereo\_params\_mono\_first.pkl} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Die gespeicherten Stereo-Parameter enthalten die Kameramatrizen, Verzeichnungskoeffizienten,
+Rotation, Translation, Essential- und Fundamental-Matrix, Rektifizierungsmatrizen,
+Projektionsmatrizen und die Reprojektionsmatrix $Q$.
 
 \begin{figure}[htbp]
     \centering
-    \ReportImagePlaceholder{Platzhalter: erkannte ChArUco-Ecken oder Kalibrierbildpaar aus dem Notebook}
-    \caption{Beispielhafte Kalibrieraufnahme mit erkannten ChArUco-Merkmalen.}
-    \label{fig:calibration_detection_example}
+    \includegraphics[width=0.45\columnwidth]{Aufbau.jpg}
+    \caption{Aufbau der Stereo-Kamera mit ChArUco-Board zur Kalibrierung.}
+    \label{fig:stereo_calib_pair}
 \end{figure}
 
-\section{Rekonstruktionsablauf}
+\newpage
 
-Im Rekonstruktionsnotebook werden zunächst die Kalibrierparameter geladen. Das Szenenbildpaar
-kann neu mit den Basler-Kameras aufgenommen oder aus gespeicherten Rohbildern geladen werden.
-Optional kann eine Histogrammangleichung den Kontrast für das Stereo-Matching verbessern.
 
-Nach dem Laden werden die Bilder rektifiziert und mit StereoSGBM verarbeitet. Für nahe
-Objekte kann der erforderliche Disparitätsbereich groß werden; deshalb enthält das Notebook
-eine automatische Erweiterung, wenn eine Sättigung am oberen Grenzwert erkannt wird. Gültige
-Disparitätspixel werden mit $Q$ zu 3D-Punkten reprojectiert. Die Farben stammen aus dem
-linken rektifizierten Bild.
+\subsection{Aufnahme und Rektifizierung}
 
-Der Export erfolgt im binären PLY-Format. Zur Kontrolle dienen eine Matplotlib-Vorschau und
-eine interaktive Open3D-Ansicht. Für große Punktwolken wird eine reproduzierbare
-Zufallsauswahl verwendet.
+Das Rekonstruktionsnotebook kann entweder neue Bilder mit den Basler-Kameras aufnehmen oder
+das neueste gespeicherte Stereo-Paar aus \texttt{captures/} verwenden. Im Workspace liegen 60
+Szenen- und Testbilder, also 30 linke/rechte Paare, vor. Vor dem Stereo-Matching kann CLAHE
+aktiviert werden, um lokale Kontraste zu erhöhen.
 
 \begin{figure}[htbp]
     \centering
-    \ReportImagePlaceholder{Platzhalter: Disparitätskarte oder rektifiziertes Stereo-Bildpaar aus dem Rekonstruktionsnotebook}
-    \caption{Zwischenergebnis der Rekonstruktion, beispielsweise rektifizierte Bilder oder Disparitätskarte.}
-    \label{fig:reconstruction_intermediate}
+    \includegraphics[width=0.47\columnwidth]{stereo_scene_20260615_170755_L.png}
+    \includegraphics[width=0.47\columnwidth]{stereo_scene_20260615_170755_R.png}
+    \caption{Beispiel eines gespeicherten Stereo-Rohbildpaars aus dem Ordner \texttt{captures/}.}
+    \label{fig:stereo_raw_pair}
+\end{figure}
+
+Die Rektifizierung wird mit den gespeicherten OpenCV-Parametern durchgeführt. Dadurch liegen
+korrespondierende Punkte idealerweise auf gleicher Bildhöhe. Dieser Schritt ist die
+Voraussetzung dafür, dass StereoSGBM sinnvoll arbeiten kann.
+
+\subsection{Disparität und Punktwolkenexport}
+
+Für die Disparitätsberechnung wird \texttt{cv2.StereoSGBM\_create} eingesetzt. Die aktuelle
+Konfiguration nutzt \texttt{minDisparity = 0}, initial \texttt{numDisparities = 384},
+maximal \texttt{512}, eine Blockgröße von 7, \texttt{uniquenessRatio = 8},
+\texttt{speckleWindowSize = 80}, \texttt{speckleRange = 2} und den Modus
+\texttt{STEREO\_SGBM\_MODE\_SGBM\_3WAY}. Wenn mehr als fünf Prozent der gültigen Pixel am
+oberen Disparitätslimit liegen, erweitert das Notebook den Disparitätsbereich automatisch.
+
+Nach der Disparitätsschätzung werden nur Punkte im Tiefenbereich von
+$400\,\mathrm{mm}$ bis $650\,\mathrm{mm}$ übernommen. Die Punktwolken werden als PLY-Dateien
+gespeichert. Um sehr große Dateien handhabbar zu halten, wird beim Speichern auf maximal
+400\,000 Punkte reduziert.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Erzeugte Bildverarbeitungsartefakte im Workspace.}
+    \label{tab:vision_artifacts}
+    \begin{tabular}{ll}
+        \hline
+        Artefakt & Anzahl / Zweck \\
+        \hline
+        \texttt{captures/} & 60 Rohbilder \\
+        \texttt{detections/} & 26 annotierte YOLO-Bilder \\
+        \texttt{pointclouds/} & 21 PLY-Punktwolken \\
+        \texttt{calib/*.pkl} & gespeicherte Kalibrierparameter \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Datensanitation}
+
+Zusätzlich zur rohen Punktwolke erzeugt das Notebook bereinigte Varianten. Der erste
+Bereinigungsschritt schneidet die Disparitätskarte anhand definierter Disparitäts- und
+Bildbereichsgrenzen. Der zweite Schritt arbeitet auf der gültigen Disparitätsmaske und
+behält den größten zusammenhängenden Bereich. Kleine getrennte Komponenten werden ab einer
+Mindestfläche von 2\,000 Pixeln gefiltert.
+
+Beim letzten dokumentierten Lauf wurden nach der Disparitäts- und Tiefenfilterung 278\,810
+Kandidatenpunkte betrachtet. Die Sanitation behielt 268\,574 Punkte, also 96,33 Prozent. Der
+resultierende Bereich lag bei etwa $X=-77{,}1$ bis $197{,}3\,\mathrm{mm}$ und
+$Z=523{,}9$ bis $580{,}7\,\mathrm{mm}$. Die bereinigte Datei
+\texttt{scene\_pointcloud\_sanitized\_20260616\_091546.ply} hat eine Größe von ca.
+$3{,}84\,\mathrm{MB}$.
+
+\section{Teil B: Machine Learning}
+
+\subsection{Datensatz}
+
+Für die Stifterkennung wurde ein eigener YOLO-Datensatz erstellt. Die Ausgangsbilder liegen
+zusätzlich nach Klassen sortiert in \texttt{CustomModel/TrainingData/}: 50 Bilder für
+\textit{Marker}, 50 für \textit{Fineliner}, 50 für \textit{Pencil} und 60 gemischte Bilder.
+Der daraus exportierte Roboflow/YOLO-Datensatz enthält drei Klassen:
+
+\begin{itemize}
+    \item Klasse 0: \textit{Fineliner},
+    \item Klasse 1: \textit{Marker},
+    \item Klasse 2: \textit{Pencil}.
+\end{itemize}
+
+Die Aufteilung im YOLO-Datensatz besteht aus 144 Trainingsbildern, 41 Validierungsbildern und
+21 Testbildern. Die Labels liegen im YOLO-Format als normalisierte Bounding Boxes vor.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.82\columnwidth]{labels.jpg}
+    \caption{Label- und Bounding-Box-Verteilung des YOLO-Trainingsdatensatzes.}
+    \label{fig:yolo_labels}
+\end{figure}
+
+\subsection{Training}
+
+Trainiert wurde mit Ultralytics YOLO11m. Als Startpunkt wurde ein vortrainiertes Modell
+verwendet. Die Trainingskonfiguration nutzte 640 Pixel Eingabegröße, Batchgröße 8,
+Validierung während des Trainings, deterministische Ausführung mit Seed 0 und automatische
+Optimizer-Auswahl. Die Trainingskonfiguration war auf 300 Epochen mit Patience 50 ausgelegt;
+der gespeicherte Lauf umfasst 129 Epochen.
+
+Zur Regularisierung und besseren Generalisierung wurden Standard-Augmentationen verwendet:
+HSV-Anpassung, Translation, Skalierung, horizontales Spiegeln, Mosaic, RandAugment und
+Random Erasing. Diese Augmentationen passen zur Empfehlung, kleine industrielle
+Bilddatensätze künstlich zu variieren, damit das Modell nicht nur die konkreten
+Trainingsaufnahmen auswendig lernt.
+
+\begin{table}[htbp]
+    \centering
+    \caption{YOLO-Trainingsergebnisse des Laufs \texttt{stifterkennung\_yolo11m}.}
+    \label{tab:yolo_metrics}
+    \begin{tabular}{lll}
+        \hline
+        Metrik & Bester Wert & Epoche \\
+        \hline
+        Precision & 0,996 & 117 \\
+        Recall & 0,967 & 129 \\
+        mAP@50 & 0,985 & 128 \\
+        mAP@50:95 & 0,845 & 79 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\columnwidth]{results.png}
+    \caption{Trainingsverlauf mit Verlusten und Validierungsmetriken des YOLO11m-Modells.}
+    \label{fig:yolo_results}
 \end{figure}
 
 \begin{figure}[htbp]
     \centering
-    \ReportImagePlaceholder{Platzhalter: Open3D-Ansicht der exportierten Punktwolke}
-    \caption{Kontrollansicht der rekonstruierten farbigen Punktwolke.}
-    \label{fig:pointcloud_overview}
+    \includegraphics[width=0.82\columnwidth]{confusion_matrix_normalized.png}
+    \caption{Normalisierte Confusion Matrix des trainierten YOLO-Modells.}
+    \label{fig:yolo_confusion_matrix}
 \end{figure}
 
-\section{Datensanitation}
+\subsection{Inferenz im Stereo-Workflow}
 
-Während der Rekonstruktion können Artefakte entstehen, etwa sehr hohe oder niedrige
-Disparitäten, Randlinien und isolierte Punktgruppen. Dafür wurde eine Datensanitation
-ergänzt.
-
-Der erste Schritt arbeitet auf der Disparitätskarte. Er erlaubt minimale und maximale
-Disparitätswerte sowie einen gültigen Bildbereich. So können vertikale oder horizontale
-Artefaktlinien außerhalb des relevanten Bereichs entfernt werden. Aus dieser geschnittenen
-Disparitätskarte wird eine eigene Punktwolke exportiert.
-
-Der zweite Schritt entfernt kleine getrennte Bereiche über verbundene Komponenten in der
-gültigen Disparitätsmaske. In der aktuellen Einstellung wird der größte zusammenhängende
-Bereich beibehalten; weitere Bereiche müssen eine Mindestgröße überschreiten. Eine
-Open3D-Vergleichsansicht zeigt entfernte Punkte rot eingefärbt.
+Die YOLO-Inferenz wurde in das Rekonstruktionsnotebook integriert, bleibt aber von der
+Punktwolkenberechnung getrennt. Das Modell wird aus \texttt{best.pt} geladen, die
+Konfidenzschwelle beträgt 0,4 und die IoU-Schwelle 0,45. Die Erkennung wird auf linkes und
+rechtes Rohbild angewendet. Die Ausgaben werden mit Bounding Boxes gespeichert.
 
 \begin{figure}[htbp]
     \centering
-    \ReportImagePlaceholder{Platzhalter: Open3D-Vergleichsansicht mit entfernten Punkten in Rot}
-    \caption{Vergleich zwischen beibehaltenen und durch die Datensanitation entfernten Punkten.}
-    \label{fig:data_sanitation_removed_points}
-\end{figure}
-
-\section{Objekterkennung}
-
-Die Objekterkennung wurde als separater Verarbeitungsschritt ergänzt und wird auf den
-Rohbildern der linken und rechten Kamera ausgeführt. Die Rohbilder entsprechen dem direkten
-Sensorausgang und enthalten keine geometrische Transformation durch die Rektifizierung. Die
-Ausgabe umfasst Klassen, Konfidenzen, Bounding Boxes und annotierte Bilddateien.
-
-Die Objekterkennung ist aktuell ein vorbereitender Schritt. Sie liefert semantische
-Information, ist aber noch nicht mit der Punktwolke fusioniert. Eine Übertragung der Bounding
-Boxes auf 3D-Punkte wäre ein sinnvoller nächster Entwicklungsschritt.
-
-\begin{figure}[htbp]
-    \centering
-    \ReportImagePlaceholder{Platzhalter: YOLO-Ausgabe auf linkem und rechtem Rohbild}
-    \caption{Beispielhafte Objekterkennung auf den unveränderten Rohbildern der Kameras.}
+    \includegraphics[width=0.47\columnwidth]{yolo_scene_20260616_091521_L.png}
+    \includegraphics[width=0.47\columnwidth]{yolo_scene_20260616_091521_R.png}
+    \caption{YOLO-Inferenz auf linken und rechten Rohbildern vor der Rektifizierung.}
     \label{fig:yolo_raw_detection}
 \end{figure}
+
+\section{Zusammenwirken der Module}
+
+Der aktuelle Workflow nutzt YOLO zur semantischen Analyse der Rohbilder und StereoSGBM zur
+geometrischen Rekonstruktion. Diese Reihenfolge ist praktisch, weil die Objekterkennung nicht
+durch Rektifizierungsartefakte beeinflusst wird. Für eine spätere 3D-Objektauswertung
+könnten die 2D-Bounding-Boxes auf die rektifizierten Bilder übertragen und anschließend mit
+den gültigen 3D-Punkten innerhalb der jeweiligen Objektregion verknüpft werden.
